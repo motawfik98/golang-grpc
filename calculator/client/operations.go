@@ -68,3 +68,45 @@ func doAvg(client pb.CalculatorServiceClient) {
 	}
 	log.Printf("result: %f\n", res.Result)
 }
+
+func doMax(client pb.CalculatorServiceClient) {
+	log.Println("doMax function was revoked")
+
+	stream, err := client.Max(context.Background())
+	if err != nil {
+		log.Fatalf("cannot call Max: %v\n", err)
+	}
+
+	waitc := make(chan struct{})
+
+	go func() {
+		nums := []int32{1, 5, 3, 6, 2, 20}
+		for _, num := range nums {
+			log.Printf("sending num: %d\n", num)
+			err := stream.Send(&pb.MaxRequest{Number: num})
+			if err != nil {
+				log.Printf("cannot send Max request: %v\n", err)
+				break
+			}
+			time.Sleep(1 * time.Second)
+		}
+		stream.CloseSend()
+	}()
+
+	go func() {
+		for {
+			res, err := stream.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Printf("failed to receive max: %v\n", err)
+				break
+			}
+			log.Printf("current max is: %d\n", res.Result)
+		}
+		close(waitc)
+	}()
+
+	<-waitc
+}

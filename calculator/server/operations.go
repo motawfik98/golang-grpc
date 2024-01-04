@@ -5,6 +5,7 @@ import (
 	pb "go-grpc-course/calculator/proto"
 	"io"
 	"log"
+	"math"
 )
 
 func (s *Server) Sum(ctx context.Context, in *pb.SumRequest) (*pb.SumResponse, error) {
@@ -50,4 +51,26 @@ func (s *Server) Avg(stream pb.CalculatorService_AvgServer) error {
 	return stream.SendAndClose(&pb.AvgResponse{
 		Result: float64(sum) / float64(totalNums),
 	})
+}
+
+func (s *Server) Max(stream pb.CalculatorService_MaxServer) error {
+	log.Println("Max function was revoked")
+
+	currentMax := int32(-1)
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalf("cannot receive message: %v\n", err)
+		}
+		currentMax = int32(math.Max(float64(currentMax), float64(req.Number)))
+		res := &pb.MaxResponse{Result: currentMax}
+		err = stream.Send(res)
+		if err != nil {
+			log.Fatalf("cannot send maximum: %v\n", err)
+		}
+	}
+	return nil
 }
