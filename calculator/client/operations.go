@@ -5,6 +5,7 @@ import (
 	pb "go-grpc-course/calculator/proto"
 	"io"
 	"log"
+	"time"
 )
 
 func doAddition(client pb.CalculatorServiceClient) {
@@ -39,4 +40,31 @@ func doPrime(client pb.CalculatorServiceClient) {
 		log.Printf("Prime: %d", msg.Factor)
 	}
 
+}
+
+func doAvg(client pb.CalculatorServiceClient) {
+	log.Println("doAvg was invoked")
+
+	stream, err := client.Avg(context.Background())
+	if err != nil {
+		log.Fatalf("error while calling Avg: %v\n", err)
+	}
+
+	reqs := []*pb.AvgRequest{
+		{Number: 1},
+		{Number: 2},
+		{Number: 3},
+		{Number: 4},
+	}
+
+	for _, req := range reqs {
+		log.Printf("sending Avg request: %v\n", req)
+		stream.Send(req)
+		time.Sleep(1 * time.Second)
+	}
+	res, err := stream.CloseAndRecv()
+	if err != nil {
+		log.Fatalf("cannot receive response from Avg: %v\n", err)
+	}
+	log.Printf("result: %f\n", res.Result)
 }
