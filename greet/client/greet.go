@@ -5,6 +5,7 @@ import (
 	pb "go-grpc-course/greet/proto"
 	"io"
 	"log"
+	"time"
 )
 
 func doGreet(c pb.GreetServiceClient) {
@@ -38,4 +39,31 @@ func doGreetManyTimes(c pb.GreetServiceClient) {
 		}
 		log.Printf("GreetManyTimes: %s", msg.Result)
 	}
+}
+
+func doLongGreet(c pb.GreetServiceClient) {
+	log.Println("doLongGreet was invoked")
+
+	stream, err := c.LongGreet(context.Background())
+	if err != nil {
+		log.Fatalf("error while calling LongGreet: %v\n", err)
+	}
+
+	reqs := []*pb.GreetRequest{
+		{FirstName: "Mohamed"},
+		{FirstName: "Ahmed"},
+		{FirstName: "Tawfik"},
+	}
+
+	for _, req := range reqs {
+		log.Printf("Sending req: %v\n", req)
+		stream.Send(req)
+		time.Sleep(1 * time.Second)
+	}
+
+	res, err := stream.CloseAndRecv()
+	if err != nil {
+		log.Fatalf("error while receiving response from LongGreet: %v\n", err)
+	}
+	log.Printf("LongGreet %s\n", res.Result)
 }
