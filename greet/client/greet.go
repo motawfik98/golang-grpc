@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	pb "go-grpc-course/greet/proto"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"io"
 	"log"
 	"time"
@@ -109,4 +111,29 @@ func doGreetEveryone(c pb.GreetServiceClient) {
 	}()
 
 	<-waitc
+}
+
+func doGreetWithDeadline(c pb.GreetServiceClient, timeout time.Duration) {
+	log.Println("doGreetWithDeadline was invoked")
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	req := &pb.GreetRequest{FirstName: "Mohamed"}
+
+	res, err := c.GreetWithDeadline(ctx, req)
+	if err != nil {
+		e, ok := status.FromError(err)
+		if ok { // grpc error
+			if e.Code() == codes.DeadlineExceeded {
+				log.Println("Deadline exceeded")
+				return
+			}
+			log.Fatalf("unexpected gRPC error: %v\n", err)
+		} else {
+			log.Fatalf("Non gRPC error: %v\n", err)
+		}
+	}
+
+	log.Printf("GreetWithDeadline: %s\n", res.Result)
 }
