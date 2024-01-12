@@ -3,6 +3,7 @@ package main
 import (
 	pb "go-grpc-course/calculator/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
 )
@@ -23,6 +24,11 @@ func main() {
 
 	s := grpc.NewServer()
 	pb.RegisterCalculatorServiceServer(s, &Server{})
+
+	// to use reflection, open the terminal and type
+	// evans --host localhost --port 50053 --reflection retl
+	// make sure to install evans first
+	reflection.Register(s)
 
 	if err = s.Serve(lis); err != nil {
 		log.Fatalf("Failed to server: %v\n", err)
